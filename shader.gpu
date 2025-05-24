@@ -1,25 +1,60 @@
-
-
-// Vertex shader
 const vertexShaderSource = `
 attribute vec3 vertex;
 uniform mat4 ModelViewMatrix;
 uniform mat4 ProjectionMatrix;
+uniform vec4 color;
+varying vec4 vColor;
 
 void main() {
     gl_Position = ProjectionMatrix * ModelViewMatrix * vec4(vertex, 1.0);
+    vColor = color;
 }`;
 
-
-// Fragment shader
 const fragmentShaderSource = `
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-   precision highp float;
-#else
-   precision mediump float;
-#endif
+precision mediump float;
+varying vec4 vColor;
 
-uniform vec4 color;
 void main() {
-    gl_FragColor = color;
+    gl_FragColor = vColor;
+}`;
+
+// Shader for WebCam
+const vertexShaderWebCamSource = `#version 300 es
+out vec2 vTexCoord;
+
+void main() 
+{
+    vec2 positions[6] = vec2[](
+        vec2(-1.0, -1.0),
+        vec2( 1.0, -1.0),
+        vec2(-1.0,  1.0),
+        vec2(-1.0,  1.0),
+        vec2( 1.0, -1.0),
+        vec2( 1.0,  1.0)
+    );
+
+   vec2 uvs[6] = vec2[](
+        vec2(0.0, 1.0),  
+        vec2(1.0, 1.0),  
+        vec2(0.0, 0.0),  
+        vec2(0.0, 0.0),  
+        vec2(1.0, 1.0),  
+        vec2(1.0, 0.0)   
+    );
+    vTexCoord = uvs[gl_VertexID];
+    gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
+}
+
+`;
+
+const fragmentShaderWebCamSource = `#version 300 es
+precision mediump float;
+
+uniform sampler2D video;
+
+in vec2 vTexCoord;
+out vec4 outColor;
+
+void main() {
+    outColor = texture(video, vTexCoord);
 }`;

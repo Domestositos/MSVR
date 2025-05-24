@@ -1,5 +1,4 @@
-function CreateWebCamTexture(width, height)
-{
+function CreateWebCamTexture(width, height) {
     // Create a texture.
     let textureID = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, textureID);

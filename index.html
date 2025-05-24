@@ -1,34 +1,163 @@
 <!DOCTYPE html>
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Anaglyphic Stereo Rendering</title>
+    <style>
+      body {
+        background: radial-gradient(circle, #000000, #16041f);
+        font-family: Georgia, serif;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+      }
 
+      button {
+        background-color: rgba(255, 255, 255, 0.7);
+        border: none;
+        border-radius: 4px;
+        padding: 10px;
+        font-size: 20px;
+        cursor: pointer;
+        margin-left: 5px;
+      }
 
-<title>PA#1</title>
-<style>
-    body {
-        background-color: #EEEEEE;
-    }
-</style>
+      button:hover {
+        background-color: rgba(255, 255, 255, 1);
+      }
+      .inputContainer {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        height: 30px;
+        align-items: center;
+      }
+      .controls {
+        margin: 10px 0;
+        padding: 10px;
+        background-color: #e4d9e9;
+        border-radius: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .control-group {
+        margin-bottom: 10px;
+      }
+      label {
+        display: inline-block;
+        width: 200px;
+      }
+      input[type="range"] {
+        width: 500px;
+        vertical-align: middle;
+      }
+      .value-display {
+        display: inline-block;
+        width: 50px;
+        text-align: center;
+      }
+    </style>
 
-<script src="./Utils/trackball-rotator.js"></script>
-<script src="./Utils/m4.js"></script>
-<script src="./shader.gpu"></script>
-<script src="./Model.js"></script>
-<script src="./StereoCamera.js"></script>
-<script src="./Texture.js"></script>
-<script src="./main.js"></script>
+    <script src="./Utils/trackball-rotator.js"></script>
+    <script src="./Utils/m4.js"></script>
+    <script src="./StereoCamera.js"></script>
+    <script src="./Texture.js"></script>
+    <script src="./shader.gpu"></script>
+    <script src="./Model.js"></script>
+    <script src="./main.js"></script>
+  </head>
+  <body onload="init()">
+    <h2 style="margin: 5px 0; color:rgba(255, 255, 255, 1);">PA#1 WebGL stereo camera</h2>
 
-</head>
-<body onload="init()">
+    <h3 style="margin: 5px 0; color:rgba(255, 255, 255, 1);">Richmond's Minimal Surface</h3>
 
-<h2>A Cube with "Trackball" Mouse Rotation</h2>
+    <p style="margin: 5px 0; color:rgba(255, 255, 255, 1);" id="message">Чуйко Дмитро ТР 43-МП</p>
 
-<p id="message">Drag your mouse on the cube to rotate it.<br>
-(On a touch screen, you can use your finger.)</p>
+    <div id="canvas-holder">
+      <canvas
+        width="800"
+        height="600"
+        id="webglcanvas"
+        style="border: 1px solid black"
+      ></canvas>
+    </div>
 
+    <div class="controls">
+      <h3 style="margin: 10px 0;"> Stereo Camera Parameters</h3>
 
-<div id="canvas-holder">
-   <canvas width="600" height="600" id="webglcanvas" style="background-color:red"></canvas>
-</div>
+      <div class="control-group">
+        <label for="eyeSeparation">Eye Separation: </label>
+        <input
+          type="range"
+          id="eyeSeparation"
+          min="0.1"
+          max="2.0"
+          step="0.1"
+          value="0.7"
+          oninput="updateEyeSepValue(this.value); updateParameters();"
+        />
+        <span class="value-display" id="eyeSepValue">0.7</span>
+      </div>
 
+      <div class="control-group">
+        <label for="fov">Field of View: </label>
+        <input
+          type="range"
+          id="fov"
+          min="0.1"
+          max="1.0"
+          step="0.05"
+          value="0.4"
+          oninput="updateFovValue(this.value); updateParameters();"
+        />
+        <span class="value-display" id="fovValue">0.4</span>
+      </div>
 
-</body></html>
+      <div class="control-group">
+        <label for="nearClipping">Near Clipping Distance: </label>
+        <input
+          type="range"
+          id="nearClipping"
+          min="1.0"
+          max="10.0"
+          step="0.5"
+          value="8.0"
+          oninput="updateNearValue(this.value); updateParameters();"
+        />
+        <span class="value-display" id="nearValue">8.0</span>
+      </div>
+
+      <div class="control-group">
+        <label for="convergence">Convergence Distance: </label>
+        <input
+          type="range"
+          id="convergence"
+          min="10.0"
+          max="20.0"
+          step="0.5"
+          value="14.0"
+          oninput="updateConvValue(this.value); updateParameters();"
+        />
+        <span class="value-display" id="convValue">14.0</span>
+      </div>
+    </div>
+
+    <script>
+      function updateEyeSepValue(value) {
+        document.getElementById("eyeSepValue").textContent = value;
+      }
+
+      function updateFovValue(value) {
+        document.getElementById("fovValue").textContent = value;
+      }
+
+      function updateNearValue(value) {
+        document.getElementById("nearValue").textContent = value;
+      }
+
+      function updateConvValue(value) {
+        document.getElementById("convValue").textContent = value;
+      }
+    </script>
+  </body>
+</html>

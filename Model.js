@@ -1,120 +1,92 @@
-
-
-function deg2rad(angle) {
-    return angle * Math.PI / 180;
-}
-
-
-function Vertex(p)
-{
-    this.p = p;
-    this.normal = [];
-    this.triangles = [];
-}
-
-function Triangle(v0, v1, v2)
-{
-    this.v0 = v0;
-    this.v1 = v1;
-    this.v2 = v2;
-    this.normal = [];
-    this.tangent = [];
-}
-
-// Constructor
 function Model(name) {
-    this.name = name;
+
+    this.stepsU = 50
+    this.stepsV = 40
+
     this.iVertexBuffer = gl.createBuffer();
     this.iIndexBuffer = gl.createBuffer();
     this.count = 0;
+    this.type = gl.TRIANGLES;
 
     this.BufferData = function(vertices, indices) {
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
         gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(shProgram.iAttribVertex);
 
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STREAM_DRAW);
-
-        this.count = indices.length;
+        if (indices) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STREAM_DRAW);
+            this.count = indices.length;
+        } else {
+            this.count = vertices.length / 3;
+        }
     }
 
     this.Draw = function() {
-
-        //gl.drawArrays(gl.LINE_STRIP, 0, this.count);
-        gl.drawElements(gl.TRIANGLES, this.count, gl.UNSIGNED_SHORT, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
+        gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(shProgram.iAttribVertex);
+        
+        if (this.type === gl.TRIANGLES && this.iIndexBuffer) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
+            gl.drawElements(this.type, this.count, gl.UNSIGNED_SHORT, 0);
+        } else {
+            gl.drawArrays(this.type, 0, this.count);
+        }
     }
 
     this.DrawWireframe = function() {
-
-        for (let p=0; p<this.count; p+=3)                    // offset in bytes (UNSIGNED_SHORT is two bytes)
-            gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_SHORT, p*2);
-    }
-}
-
-
-function CreateSurfaceData(data)
-{
-    let vertices = [];
-    let triangles = [];
-
-    for (let i=0, ang = 0; i<72; i++, ang+=5) {
-        vertices.push( new Vertex( [Math.sin(deg2rad(ang)), 0, Math.cos(deg2rad(ang))] ));
+        if (this.iIndexBuffer) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
+            for (let p=0; p<this.count; p+=3)
+                gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_SHORT, p*2);
+        }
     }
 
-    for (let i=0, ang = 0; i<72; i++, ang+=5) {
+    // Surface of Revolution of a General Sinusoid
+    this. CalculateCoordinateVertex = function(u, v) {
+        let x = (-3 * u - u ** 5 + 2 * u ** 3 * v ** 2 + 3 * u * v ** 4) / (6 * (u ** 2 + v ** 2));
+        let y = (-3 * v - 3 * u ** 4 * v - 2 * u ** 2 * v ** 3 + v ** 5) / (6 * (u ** 2 + v ** 2));
+        let z = u;
 
-        let v0ind = vertices.length;
-        vertices.push( new Vertex( [Math.sin(deg2rad(ang)), 1, Math.cos(deg2rad(ang))] ));
+        return [x, y, z]
+    }
 
-        // v0    v2 
-        //   o - o
-        //   | \ |
-        //   o - o
-        // v3     v1
+    this.CreateSurfaceData = function() {
+        const vertices = [];
+        const indices = [];
 
-        if (i > 0)
-        {
-            let v1ind = v0ind - 72 -1;
-            let v2ind = v0ind - 1;
-            let v3ind = v0ind - 72
+        const uMin = -1, uMax = 1;
+        const vMin = 0.2, vMax = 1;
+        const stepU = (uMax - uMin) / this.stepsU;
+        const stepV = (vMax - vMin) / this.stepsV;
 
-            let trian = new Triangle(v0ind, v1ind, v2ind);
-            let trianInd = triangles.length;
-
-            triangles.push( trian );
-            vertices[v0ind].triangles.push(trianInd);
-            vertices[v1ind].triangles.push(trianInd);
-            vertices[v2ind].triangles.push(trianInd);
-
-            let trian2 = new Triangle(v0ind, v3ind, v1ind);
-            let trianInd2 = triangles.length;
-
-            triangles.push( trian2 );
-            vertices[v0ind].triangles.push(trianInd2);
-            vertices[v3ind].triangles.push(trianInd2);
-            vertices[v1ind].triangles.push(trianInd2);
-
+        // Сетка вершин
+        for (let i = 0; i <= this.stepsU; i++) {
+            let u = uMin + i * stepU;
+            for (let j = 0; j <= this.stepsV; j++) {
+                let v = vMin + j * stepV;
+                const [x, y, z] = this.CalculateCoordinateVertex(u, v);
+                vertices.push(x, y, z);
+            }
         }
 
-    }
+        // Индексы треугольников
+        for (let i = 0; i < this.stepsU; i++) {
+            for (let j = 0; j < this.stepsV; j++) {
+                let v0 = i * (this.stepsV + 1) + j;
+                let v1 = v0 + 1;
+                let v2 = v0 + (this.stepsV + 1);
+                let v3 = v2 + 1;
 
-    data.verticesF32 = new Float32Array(vertices.length*3);
-    for (let i=0, len=vertices.length; i<len; i++)
-    {
-        data.verticesF32[i*3 + 0] = vertices[i].p[0];
-        data.verticesF32[i*3 + 1] = vertices[i].p[1];
-        data.verticesF32[i*3 + 2] = vertices[i].p[2];
+                // Первый треугольник
+                indices.push(v0, v1, v2);
+                // Второй треугольник
+                indices.push(v2, v1, v3);
+            }
+        }
+        
+        this.BufferData(new Float32Array(vertices), new Uint16Array(indices));
     }
-
-    data.indicesU16 = new Uint16Array(triangles.length*3);
-    for (let i=0, len=triangles.length; i<len; i++)
-    {
-        data.indicesU16[i*3 + 0] = triangles[i].v0;
-        data.indicesU16[i*3 + 1] = triangles[i].v1;
-        data.indicesU16[i*3 + 2] = triangles[i].v2;
-    }
-
 }
