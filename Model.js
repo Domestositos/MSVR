@@ -1,4 +1,4 @@
-function Model(name) {
+function Model() {
 
     this.stepsU = 50
     this.stepsV = 40

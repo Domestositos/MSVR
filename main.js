@@ -11,6 +11,91 @@ let iTextureWebCam = -1;
 
 let video;
 
+let websocket;
+let usePhoneSensor = false;
+let orientationMatrix = m4.identity();
+
+function connectToSensorServer() {
+    const serverUrl = document.getElementById('serverUrl').value;
+    
+    if (!serverUrl) {
+        alert('Please enter the Sensor Server WebSocket URL');
+        return;
+    }
+    
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+        websocket.close();
+    }
+    
+    websocket = new WebSocket(serverUrl);
+    
+    websocket.onopen = function() {
+        console.log('Connected to Sensor Server');
+        usePhoneSensor = true;
+        document.getElementById('connectionStatus').textContent = 'Connected';
+        document.getElementById('connectionStatus').style.color = 'green';
+    };
+    
+    websocket.onmessage = handleSensorData;
+    
+    websocket.onclose = function() {
+        console.log('Disconnected from Sensor Server');
+        usePhoneSensor = false;
+        document.getElementById('connectionStatus').textContent = 'Disconnected';
+        document.getElementById('connectionStatus').style.color = 'red';
+    };
+    
+    websocket.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        usePhoneSensor = false;
+        document.getElementById('connectionStatus').textContent = 'Error';
+        document.getElementById('connectionStatus').style.color = 'red';
+    };
+}
+
+function disconnectFromSensorServer() {
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+        websocket.close();
+    }
+    usePhoneSensor = false;
+    document.getElementById('connectionStatus').textContent = 'Disconnected';
+    document.getElementById('connectionStatus').style.color = 'red';
+}
+
+let sp = 0, sr = 0;
+const ALPHA = 0.15;
+let calibration = null;
+
+function handleSensorData(evt) {
+    let msg;
+    try {
+        msg = JSON.parse(evt.data);
+    } catch {
+        return;
+    }
+
+    const v = Array.isArray(msg) ? msg :
+        (Array.isArray(msg.values) ? msg.values : null);
+    if (!v || v.length < 3) return;
+
+    const [ax, ay, az] = v;
+
+    const pitch = Math.atan2(-ax, Math.sqrt(ay*ay + az*az));
+    const roll  = Math.atan2(ay,  az);
+
+    sp = ALPHA * pitch + (1 - ALPHA) * sp;
+    sr = ALPHA * roll  + (1 - ALPHA) * sr;
+
+    if (calibration === null) calibration = { pitch: sp, roll: sr };
+
+    const dPitch = sp - calibration.pitch;
+    const dRoll  = sr - calibration.roll;
+
+    const rotX = m4.xRotation(-dRoll);
+    const rotY = m4.yRotation( dPitch);
+    orientationMatrix = m4.multiply(rotY, rotX);
+}
+
 // Constructor
 function ShaderProgram(name, program) {
     this.name = name;
@@ -40,11 +125,11 @@ function draw() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // PATH ZERO: DRAW ZERO PARALLAX WEBCAM
+    gl.bindTexture(gl.TEXTURE_2D, iTextureWebCam);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, video);
 
     shProgramWebCam.Use();
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, iTextureWebCam);
     gl.uniform1i(shProgramWebCam.iSampler, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     
@@ -53,7 +138,12 @@ function draw() {
     shProgram.Use();
     
     /* Get the view matrix from the SimpleRotator object.*/
-    let modelView = spaceball.getViewMatrix();
+    let modelView;
+    if (usePhoneSensor) {
+        modelView = orientationMatrix;
+    } else {
+        modelView = spaceball.getViewMatrix();
+    }
 
     let rotateToPointZero = m4.axisRotation([0.707, 0.707, 0], 0.7);
     let translateToPointZero = m4.translation(0, 0, -10);
@@ -238,10 +328,9 @@ function init() {
 
     spaceball = new TrackballRotator(canvas, draw, 0);
 
+    document.getElementById('connectButton').addEventListener('click', connectToSensorServer);
+    document.getElementById('disconnectSensorButton').addEventListener('click', disconnectFromSensorServer);
+
     // Initial draw
     draw();
-}
-
-function deg2rad(angle) {
-    return angle * Math.PI / 180;
 }
