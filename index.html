@@ -1,34 +1,32 @@
 <!DOCTYPE html>
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html lang="en">
+<head>
+   <meta charset="utf-8" />
+   <title>Control Task</title>
+   <style>
+      body {
+        background: radial-gradient(circle, #000000, #16041f);
+        font-family: Georgia, serif;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+      }
 
+   </style>
 
-<title>PA#1</title>
-<style>
-    body {
-        background-color: #EEEEEE;
-    }
-</style>
-
-<script src="./Utils/trackball-rotator.js"></script>
-<script src="./Utils/m4.js"></script>
-<script src="./shader.gpu"></script>
-<script src="./Model.js"></script>
-<script src="./StereoCamera.js"></script>
-<script src="./Texture.js"></script>
-<script src="./main.js"></script>
-
+   <script src="https://cdn.jsdelivr.net/npm/three@0.155/build/three.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.2/three.js/build/ar-threex.min.js"></script>
+   <script type="module" src="./main.js"></script>
+   <script type="module" src="./Model.js"></script>
 </head>
-<body onload="init()">
+<body>
+   <h2 style="margin: 5px 0; color:rgba(255, 255, 255, 1);">Control task. AR registration template</h2>
 
-<h2>A Cube with "Trackball" Mouse Rotation</h2>
+   <h3 style="margin: 5px 0; color:rgba(255, 255, 255, 1);">Richmond's Minimal Surface</h3>
 
-<p id="message">Drag your mouse on the cube to rotate it.<br>
-(On a touch screen, you can use your finger.)</p>
+   <p style="margin: 5px 0; color:rgba(255, 255, 255, 1);" id="message">Чуйко Дмитро ТР 43-МП</p>
 
-
-<div id="canvas-holder">
-   <canvas width="600" height="600" id="webglcanvas" style="background-color:red"></canvas>
-</div>
-
-
-</body></html>
+   <div id="ar-container" ></div>
+</body>
+</html>
